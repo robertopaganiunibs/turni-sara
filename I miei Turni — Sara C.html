@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I miei Turni</title>
+<style>
+  :root {
+    --bg: #f0f4f8; --surface: #ffffff; --primary: #2563eb; --primary-dark: #1d4ed8;
+    --accent: #10b981; --danger: #ef4444; --text: #1e293b; --muted: #64748b;
+    --border: #e2e8f0; --shadow: 0 2px 12px rgba(0,0,0,0.08); --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f172a; --surface:#1e293b; --text:#f1f5f9; --muted:#94a3b8; --border:#334155; --shadow:0 2px 12px rgba(0,0,0,0.3); }
+    input[type="date"], input[type="text"] { background:#263348 !important; color:#f1f5f9 !important; border-color:#334155 !important; }
+    .event-row { background:#263348 !important; }
+    .event-row:hover { background:#2d3f5a !important; }
+    .btn-google { background:#1e293b !important; color:#f1f5f9 !important; }
+    .info-box { background:rgba(252,211,77,0.1) !important; color:#fcd34d !important; border-color:rgba(252,211,77,0.3) !important; }
+    .status.loading { background:rgba(37,99,235,0.15) !important; color:#93c5fd !important; }
+    .status.success { background:rgba(16,185,129,0.15) !important; color:#6ee7b7 !important; }
+    .status.error { background:rgba(239,68,68,0.15) !important; color:#fca5a5 !important; }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:16px 20px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10; }
+  .logo { width:38px; height:38px; background:var(--primary); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  header h1 { font-size:1.1rem; font-weight:700; }
+  header p { font-size:0.75rem; color:var(--muted); }
+  main { max-width:620px; margin:0 auto; padding:20px 14px 40px; }
+  .card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:16px; }
+  .card h2 { font-size:0.95rem; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .step-badge { width:22px; height:22px; background:var(--primary); color:white; border-radius:50%; font-size:0.7rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .upload-area { border:2px dashed var(--border); border-radius:10px; padding:28px 16px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; }
+  .upload-area:hover, .upload-area.dragging { border-color:var(--primary); background:rgba(37,99,235,0.04); }
+  .upload-area input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .upload-icon { font-size:2rem; margin-bottom:6px; }
+  .upload-area p { color:var(--muted); font-size:0.85rem; }
+  .upload-area strong { color:var(--primary); }
+  #preview-img { width:100%; border-radius:8px; margin-top:10px; display:none; max-height:180px; object-fit:cover; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:11px 18px; border-radius:10px; font-size:0.9rem; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; width:100%; }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:var(--primary-dark); }
+  .btn-primary:disabled { opacity:0.45; cursor:not-allowed; }
+  .btn-google { background:white; color:#3c4043; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+  .btn-google:hover { box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+  .btn-accent { background:var(--accent); color:white; }
+  .btn-accent:hover { background:#059669; }
+  .btn-accent:disabled { opacity:0.45; cursor:not-allowed; }
+  .btn-sm { padding:5px 9px; font-size:0.76rem; border-radius:6px; width:auto; }
+  .btn-danger { background:var(--danger); color:white; }
+  .status { padding:11px 14px; border-radius:8px; font-size:0.85rem; margin-top:10px; display:none; }
+  .status.loading { background:#eff6ff; color:#1d4ed8; display:flex; gap:8px; align-items:center; }
+  .status.success { background:#f0fdf4; color:#166534; display:block; }
+  .status.error { background:#fef2f2; color:#991b1b; display:block; }
+  .spinner { width:15px; height:15px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #events-section { display:none; }
+  .table-header { display:grid; grid-template-columns:105px 1fr 60px; gap:8px; padding:6px 10px; font-size:0.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .event-row { display:grid; grid-template-columns:105px 1fr 60px; gap:8px; align-items:center; padding:7px 10px; border-radius:8px; background:#f8fafc; margin-bottom:5px; transition:background 0.15s; }
+  .event-row:hover { background:#f1f5f9; }
+  .event-row.off-row { opacity:0.5; }
+  .event-row input[type="date"], .event-row input[type="text"] { border:1px solid var(--border); border-radius:6px; padding:5px 7px; font-size:0.82rem; color:var(--text); background:white; width:100%; font-family:inherit; }
+  .event-row input[type="text"] { font-weight:600; }
+  .off-badge { font-size:0.75rem; color:var(--muted); font-style:italic; }
+  .row-actions { display:flex; gap:4px; justify-content:flex-end; }
+  .add-row-btn { display:flex; align-items:center; gap:6px; padding:8px 12px; background:none; border:1px dashed var(--border); border-radius:8px; color:var(--muted); font-size:0.82rem; cursor:pointer; width:100%; margin-top:6px; transition:all 0.2s; }
+  .add-row-btn:hover { border-color:var(--primary); color:var(--primary); background:rgba(37,99,235,0.04); }
+  .summary-bar { display:flex; gap:16px; padding:10px 0 0; font-size:0.82rem; color:var(--muted); border-top:1px solid var(--border); margin-top:8px; }
+  .summary-bar span strong { color:var(--text); }
+  #auth-section { display:none; }
+  .info-box { background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; padding:10px 12px; font-size:0.8rem; color:#92400e; line-height:1.5; margin-bottom:10px; }
+  .google-icon { width:18px; height:18px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234285F4' d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'/%3E%3Cpath fill='%2334A853' d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z'/%3E%3Cpath fill='%23FBBC05' d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z'/%3E%3Cpath fill='%23EA4335' d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z'/%3E%3C/svg%3E") center/contain no-repeat; flex-shrink:0; }
+  #add-events-wrap { margin-top:10px; display:none; }
+  .unavailable-msg { text-align:center; padding:24px; color:var(--muted); font-size:0.9rem; }
+  details { background:var(--surface); border-radius:var(--radius); padding:16px; margin-bottom:20px; }
+  summary { cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--muted); }
+  details ol { margin:10px 0 0 18px; font-size:0.82rem; line-height:1.8; color:var(--muted); }
+  details a { color:var(--primary); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📅</div>
+  <div>
+    <h1>I miei Turni</h1>
+    <p>Foto orari → Google Calendar</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="card" id="unavailable-card" style="display:none">
+    <div class="unavailable-msg">
+      ⚠️ Questa app richiede un account Claude.ai attivo.<br>
+      <small style="color:var(--muted)">Aprila da claude.ai con il tuo account.</small>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card" id="main-ui" style="display:none">
+    <h2><span class="step-badge">1</span> Carica la foto degli orari</h2>
+    <div class="upload-area" id="upload-area">
+      <input type="file" id="file-input" accept="image/*">
+      <div class="upload-icon">📷</div>
+      <p><strong>Tocca per scegliere la foto</strong></p>
+      <p>dalla galleria o dalla fotocamera</p>
+    </div>
+    <img id="preview-img" alt="Anteprima">
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="step2-card" style="display:none">
+    <h2><span class="step-badge">2</span> Estrai i tuoi turni</h2>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">
+      L'AI cercherà la riga di <strong>SARA C.</strong> e mostrerà i turni da controllare.
+    </p>
+    <button class="btn btn-primary" id="extract-btn" disabled>🔍 Estrai i miei turni</button>
+    <div class="status" id="extract-status"></div>
+  </div>
+
+  <!-- STEP 3: Editable -->
+  <div class="card" id="events-section">
+    <h2><span class="step-badge">3</span> Controlla e modifica</h2>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">
+      Modifica date/orari, elimina errori o aggiungi turni mancanti. I turni <em>OFF</em> non vengono aggiunti.
+    </p>
+    <div class="table-header"><span>Data</span><span>Turno</span><span></span></div>
+    <div id="events-container"></div>
+    <button class="add-row-btn" id="add-row-btn">➕ Aggiungi turno manualmente</button>
+    <div class="summary-bar" id="summary-bar"></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card" id="auth-section">
+    <h2><span class="step-badge">4</span> Aggiungi a Google Calendar</h2>
+    <div class="info-box">ℹ️ Verrai reindirizzata a Google per autorizzare l'accesso. Nessun dato viene salvato.</div>
+    <button class="btn btn-google" id="auth-btn"><span class="google-icon"></span> Collega Google Calendar</button>
+    <div id="add-events-wrap">
+      <button class="btn btn-accent" id="add-events-btn">✅ Aggiungi turni al calendario</button>
+    </div>
+    <div class="status" id="calendar-status"></div>
+  </div>
+
+  <details>
+    <summary>⚙️ Come configurare Google Calendar</summary>
+    <ol>
+      <li>Vai su <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
+      <li>Crea un progetto e abilita la <strong>Google Calendar API</strong></li>
+      <li>Crea credenziali OAuth 2.0 (Applicazione web)</li>
+      <li>Aggiungi l'URL di questa pagina come origine JS autorizzata</li>
+      <li>Sostituisci <code>YOUR_GOOGLE_CLIENT_ID</code> nel codice con il tuo Client ID</li>
+    </ol>
+  </details>
+
+</main>
+
+<script>
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+
+let uploadedFile = null;
+let accessToken = null;
+let sampleFn = null;
+
+// ── INIT: check sample capability ────────────────────────────────────────────
+(async () => {
+  try {
+    sampleFn = await claude.use('sample');
+  } catch(e) {
+    sampleFn = null;
+  }
+  if (!sampleFn) {
+    document.getElementById('unavailable-card').style.display = 'block';
+  } else {
+    document.getElementById('main-ui').style.display = 'block';
+    document.getElementById('step2-card').style.display = 'block';
+  }
+})();
+
+// ── UPLOAD ───────────────────────────────────────────────────────────────────
+const fileInput = document.getElementById('file-input');
+const uploadArea = document.getElementById('upload-area');
+const previewImg = document.getElementById('preview-img');
+const extractBtn = document.getElementById('extract-btn');
+
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragging'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragging'));
+uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('dragging'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file) {
+  uploadedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => { previewImg.src = e.target.result; previewImg.style.display = 'block'; };
+  reader.readAsDataURL(file);
+  extractBtn.disabled = false;
+}
+
+// ── EXTRACT ───────────────────────────────────────────────────────────────────
+extractBtn.addEventListener('click', async () => {
+  if (!uploadedFile || !sampleFn) return;
+  setStatus('extract-status', 'loading', 'Analizzo la foto… (potrebbe richiedere qualche secondo)');
+  extractBtn.disabled = true;
+  document.getElementById('events-section').style.display = 'none';
+  document.getElementById('auth-section').style.display = 'none';
+
+  try {
+    const prompt = `Questo è un foglio orari settimanale di un negozio/locale. Cerca la riga con il nome "SARA C." (scritto anche come SARA C, Sara C., Sara C ecc.)
+
+Estrai TUTTI i suoi turni e restituisci SOLO un JSON array nel formato esatto:
+[{"date":"YYYY-MM-DD","shift":"AP-14,30","is_off":false},...]
+
+Regole:
+- date: formato YYYY-MM-DD (leggi le date dalla riga in cima del foglio, anno 2024 se non indicato)
+- shift: testo esatto del turno (AP-14,30 / 15-22 / 13-2,15 / OFF / 10-16 / ecc.)
+- is_off: true solo se scritto OFF
+- Includi TUTTI i giorni visibili, anche gli OFF
+- Rispondi SOLO con il JSON array, zero testo aggiuntivo, zero markdown`;
+
+    const result = await sampleFn.json(prompt, {
+      images: [uploadedFile],
+      modelTier: 'default',
+      cache: false
+    });
+
+    const events = Array.isArray(result) ? result : [];
+    if (events.length === 0) throw new Error('Nessun turno trovato per SARA C. in questa foto.');
+
+    renderEditableEvents(events);
+    setStatus('extract-status', 'success', `✅ Trovati ${events.length} giorni — controlla e modifica sotto`);
+    document.getElementById('events-section').style.display = 'block';
+    document.getElementById('auth-section').style.display = 'block';
+
+  } catch (err) {
+    console.error(err);
+    const msg = err.code === 'not_granted' ? 'Hai negato l\'accesso a Claude. Ricarica la pagina per riprovare.'
+      : err.code === 'rate_limited' ? 'Troppe richieste. Aspetta un momento e riprova.'
+      : err.code === 'images_unavailable' ? 'Invio immagini non disponibile in questa sessione.'
+      : (err.message || JSON.stringify(err));
+    setStatus('extract-status', 'error', '❌ ' + msg);
+    extractBtn.disabled = false;
+  }
+});
+
+// ── EDITABLE TABLE ────────────────────────────────────────────────────────────
+function renderEditableEvents(events) {
+  document.getElementById('events-container').innerHTML = '';
+  events.forEach(ev => addRow(ev));
+  updateSummary();
+}
+
+function addRow(ev) {
+  if (!ev) ev = { date: todayStr(), shift: '', is_off: false };
+  const container = document.getElementById('events-container');
+  const isOff = ev.is_off || String(ev.shift).toUpperCase() === 'OFF';
+  const row = document.createElement('div');
+  row.className = 'event-row' + (isOff ? ' off-row' : '');
+  row.innerHTML = `
+    <input type="date" value="${ev.date || ''}" class="date-input">
+    ${isOff
+      ? `<span class="off-badge">Giorno libero</span>`
+      : `<input type="text" value="${ev.shift || ''}" class="shift-input" placeholder="es: 15-22">`
+    }
+    <div class="row-actions">
+      <button class="btn btn-sm btn-danger del-btn" title="Elimina">🗑</button>
+    </div>`;
+  row.querySelector('.del-btn').addEventListener('click', () => { row.remove(); updateSummary(); });
+  row.querySelector('.date-input')?.addEventListener('change', updateSummary);
+  row.querySelector('.shift-input')?.addEventListener('input', updateSummary);
+  container.appendChild(row);
+  updateSummary();
+}
+
+document.getElementById('add-row-btn').addEventListener('click', () => addRow(null));
+
+function updateSummary() {
+  const rows = document.querySelectorAll('#events-container .event-row');
+  let work = 0, off = 0;
+  rows.forEach(r => r.classList.contains('off-row') ? off++ : work++);
+  document.getElementById('summary-bar').innerHTML =
+    `<span><strong>${work}</strong> turni lavorativi</span><span><strong>${off}</strong> giorni liberi (non aggiunti)</span>`;
+}
+
+function getWorkEvents() {
+  const rows = document.querySelectorAll('#events-container .event-row:not(.off-row)');
+  const out = [];
+  rows.forEach(r => {
+    const date = r.querySelector('.date-input')?.value;
+    const shift = r.querySelector('.shift-input')?.value?.trim();
+    if (date && shift) out.push({ date, shift });
+  });
+  return out;
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+// ── GOOGLE AUTH ───────────────────────────────────────────────────────────────
+document.getElementById('auth-btn').addEventListener('click', () => {
+  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+    setStatus('calendar-status', 'error', '⚠️ Configura il Google Client ID. Vedi le istruzioni in basso.');
+    return;
+  }
+  const p = new URLSearchParams({ client_id:GOOGLE_CLIENT_ID, redirect_uri:location.origin+location.pathname, response_type:'token', scope:SCOPES, prompt:'consent' });
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
+});
+
+(function handleOAuth() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.has('access_token')) return;
+  accessToken = p.get('access_token');
+  history.replaceState(null,'',location.pathname);
+  const btn = document.getElementById('auth-btn');
+  btn.innerHTML = '✅ Google collegato';
+  btn.style.cssText = 'background:#f0fdf4;color:#166534;border-color:#bbf7d0';
+  document.getElementById('add-events-wrap').style.display = 'block';
+  setStatus('calendar-status','success','Google Calendar collegato! Puoi aggiungere i turni.');
+})();
+
+// ── ADD TO CALENDAR ───────────────────────────────────────────────────────────
+document.getElementById('add-events-btn').addEventListener('click', async () => {
+  if (!accessToken) return;
+  const events = getWorkEvents();
+  if (!events.length) { setStatus('calendar-status','error','Nessun turno lavorativo da aggiungere.'); return; }
+  const btn = document.getElementById('add-events-btn');
+  btn.disabled = true;
+  setStatus('calendar-status','loading',`Aggiungo ${events.length} turni…`);
+  let added=0, errors=0;
+  for (const ev of events) {
+    try {
+      const { start, end } = parseShift(ev.date, ev.shift);
+      const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({ summary:`🏪 Lavoro ${ev.shift}`, colorId:'1', start:{dateTime:start,timeZone:'Europe/Rome'}, end:{dateTime:end,timeZone:'Europe/Rome'}, reminders:{useDefault:false,overrides:[{method:'popup',minutes:60}]} })
+      });
+      r.ok ? added++ : errors++;
+    } catch { errors++; }
+  }
+  if (!errors) setStatus('calendar-status','success',`🎉 ${added} turni aggiunti! Controlla l'app Calendario.`);
+  else setStatus('calendar-status','error',`⚠️ Aggiunti ${added}, errori: ${errors}.`);
+  btn.disabled = false;
+});
+
+function parseShift(dateStr, shift) {
+  const d = new Date(dateStr+'T00:00:00');
+  if (/^AP-/i.test(shift)) {
+    const t = shift.substring(3).replace(',',':');
+    const [eh,em] = t.split(':').map(Number);
+    return { start:dt(d,6,0), end:dt(d,eh,em||0) };
+  }
+  const parts = shift.split('-');
+  if (parts.length >= 2) {
+    const [sh,sm] = parts[0].replace(',',':').split(':').map(Number);
+    const [eh,em] = parts[parts.length-1].replace(',',':').split(':').map(Number);
+    const s=new Date(d); s.setHours(sh||0,sm||0,0,0);
+    const e=new Date(d); e.setHours(eh||0,em||0,0,0);
+    if (e<=s) e.setDate(e.getDate()+1);
+    return { start:s.toISOString(), end:e.toISOString() };
+  }
+  return { start:dt(d,10,0), end:dt(d,18,0) };
+}
+function dt(base,h,m){ const d=new Date(base); d.setHours(h,m,0,0); return d.toISOString(); }
+
+function setStatus(id,type,msg){
+  const el=document.getElementById(id);
+  el.className=`status ${type}`;
+  el.innerHTML=type==='loading'?`<span class="spinner"></span><span>${msg}</span>`:msg;
+}
+</script>
+</body>
+</html>

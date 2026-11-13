@@ -7,9 +7,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { image, mediaType } = req.body;
-    const currentYear = new Date().toLocaleString('it-IT', {timeZone: 'Europe/Rome', year: 'numeric'}).slice(-4);
+    const { image, mediaType, year } = req.body;
     if (!image) return res.status(400).json({ error: 'Missing image' });
+
+    const currentYear = year || 2026;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -31,7 +32,7 @@ Rispondi SOLO con un JSON array, nessun testo aggiuntivo:
 [{"date":"YYYY-MM-DD","shift":"AP-14,30","is_off":false},...]
 
 Regole:
-- date: YYYY-MM-DD (leggi le date dalla riga in cima, usa ${currentYear} se manca l'anno)
+- date: YYYY-MM-DD (leggi le date dalla riga in cima, l'anno è ${currentYear})
 - shift: testo esatto (AP-14,30 / 15-22 / 13-2,15 / OFF / ecc.)
 - is_off: true solo se scritto OFF
 - Includi tutti i giorni visibili inclusi gli OFF` }

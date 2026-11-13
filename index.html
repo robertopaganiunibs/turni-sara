@@ -148,7 +148,7 @@
 
 <script>
 // ── CONFIG ───────────────────────────────────────────────────────────────────
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // ← verrà sostituito
+const GOOGLE_CLIENT_ID = '625866613007-e5s83tuj8q7j0q7uoorhf3uae2ai88od.apps.googleusercontent.com'; // ← verrà sostituito
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'turni_sara_apikey';
 
@@ -323,7 +323,7 @@ function todayStr() { return new Date().toISOString().split('T')[0]; }
 
 // ── GOOGLE AUTH ───────────────────────────────────────────────────────────────
 document.getElementById('auth-btn').addEventListener('click', () => {
-  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+  if (GOOGLE_CLIENT_ID === '625866613007-e5s83tuj8q7j0q7uoorhf3uae2ai88od.apps.googleusercontent.com') {
     setStatus('calendar-status', 'error', '⚠️ Client ID Google non ancora configurato.');
     return;
   }

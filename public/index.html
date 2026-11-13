@@ -144,7 +144,7 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
     const response = await fetch('/api/extract', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64, mediaType: uploadedFile.type || 'image/jpeg' })
+      body: JSON.stringify({ image: base64, mediaType: uploadedFile.type || 'image/jpeg', year: new Date().getFullYear() })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Errore server');

@@ -28,14 +28,15 @@ export default async function handler(req, res) {
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } },
             { type: 'text', text: `Questo è un foglio orari settimanale. Cerca la riga "SARA C." ed estrai tutti i suoi turni. Se il nome "SARA C." non è visibile perché tagliato dalla foto, prendi i turni della penultima riga della lista del personale.
 
-Rispondi SOLO con un JSON array, nessun testo aggiuntivo:
+Rispondi SOLO con un JSON array valido. NESSUN testo prima o dopo. NESSUNA spiegazione. SOLO JSON:
 [{"date":"YYYY-MM-DD","shift":"AP-14,30","is_off":false},...]
 
 Regole:
 - date: YYYY-MM-DD (leggi le date dalla riga in cima, l'anno è ${currentYear})
 - shift: testo esatto (AP-14,30 / 15-22 / 13-2,15 / OFF / ecc.)
 - is_off: true solo se scritto OFF
-- Includi tutti i giorni visibili inclusi gli OFF` }
+- Includi tutti i giorni visibili inclusi gli OFF
+- NON scrivere nulla prima o dopo il JSON` }
           ]
         }]
       })

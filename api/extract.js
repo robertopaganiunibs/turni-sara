@@ -26,7 +26,7 @@ export default async function handler(req, res) {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: image } },
-            { type: 'text', text: `Questo è un foglio orari settimanale. Cerca la riga "SARA C." ed estrai tutti i suoi turni.
+            { type: 'text', text: `Questo è un foglio orari settimanale. Cerca la riga "SARA C." ed estrai tutti i suoi turni. Se il nome "SARA C." non è visibile perché tagliato dalla foto, prendi i turni della penultima riga della lista del personale.
 
 Rispondi SOLO con un JSON array, nessun testo aggiuntivo:
 [{"date":"YYYY-MM-DD","shift":"AP-14,30","is_off":false},...]
